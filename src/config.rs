@@ -314,26 +314,6 @@ pub const SPRUCE_UPDATE_DELETE_PATHS: &[&str] = &[
     "README.md",
 ];
 
-/// Device name mappings for BaseOS release assets.
-///
-/// Assets are named `baseos-<device>-<version>.img.zip`. Matching is a plain
-/// substring test against the filename and the FIRST match wins, so more
-/// specific patterns must come first — `-rg34xx` would otherwise swallow
-/// `-rg34xxsp`. The leading dash keeps patterns anchored to the device field.
-pub const BASEOS_DEVICE_MAPPINGS: &[AssetDisplayMapping] = &[
-    AssetDisplayMapping { pattern: "-rg35xxplus", display_name: "RG35XX Plus", devices: "Anbernic RG35XX Plus" },
-    AssetDisplayMapping { pattern: "-rg35xxpro",  display_name: "RG35XX Pro",  devices: "Anbernic RG35XX Pro" },
-    AssetDisplayMapping { pattern: "-rg35xxsp",   display_name: "RG35XX SP",   devices: "Anbernic RG35XX SP" },
-    AssetDisplayMapping { pattern: "-rg35xxh",    display_name: "RG35XX H",    devices: "Anbernic RG35XX H" },
-    AssetDisplayMapping { pattern: "-rg34xxsp",   display_name: "RG34XX SP",   devices: "Anbernic RG34XX SP" },
-    AssetDisplayMapping { pattern: "-rg34xx",     display_name: "RG34XX",      devices: "Anbernic RG34XX" },
-    AssetDisplayMapping { pattern: "-rg40xxh",    display_name: "RG40XX H",    devices: "Anbernic RG40XX H" },
-    AssetDisplayMapping { pattern: "-rg40xxv",    display_name: "RG40XX V",    devices: "Anbernic RG40XX V" },
-    AssetDisplayMapping { pattern: "-rgcubexx",   display_name: "RG CubeXX",   devices: "Anbernic RG CubeXX" },
-    AssetDisplayMapping { pattern: "-rg28xx",     display_name: "RG28XX",      devices: "Anbernic RG28XX" },
-    AssetDisplayMapping { pattern: "-rgsp",       display_name: "RG SP",       devices: "Anbernic RG SP" },
-];
-
 pub const REPO_OPTIONS: &[RepoOption] = &[
     RepoOption {
         name: "Stable",
@@ -376,27 +356,17 @@ pub const REPO_OPTIONS: &[RepoOption] = &[
         supports_preserve_mode: false,
     },
     RepoOption {
-        name: "dArkMoss",
-        url: "spruceUI/dArkMoss",
-        info: "spruceOS for the Powkiddy RGB30, built on a Debian base.\nRaw disk image; erases the entire card.\nShipped as a multi-part archive - every part downloads automatically.",
-        display_name: Some("dArkMoss"),
+        // Placeholder name; the manifest's display_name is what the popups use.
+        name: "TF1 Image",
+        url: "spruceUI/spruceOS-Installer",
+        info: "Base system card for two-card devices: Anbernic RG XX, Powkiddy RGB30, Miniloong Pocket 1, MagicX Zero 28 / Zero 40 / XU20.\nThe list comes from manifest.json on the installer's latest release.\nRaw disk image; erases the entire card. spruceOS then goes on the second card from the Stable tab.",
+        display_name: Some("TF1 image"),
         supports_update_mode: false,  // Raw disk images always do a full burn
-        update_directories: &[],      // Not used for raw images
-        allowed_extensions: Some(&[".img.7z"]),  // Volumes are matched under their .001/.002 suffix
+        update_directories: &[],
+        // Every raw image format the manifest can name; the filter still runs on manifest assets.
+        allowed_extensions: Some(&[".img.7z", ".img.zip", ".img.xz", ".img.gz"]),
         excluded_patterns: None,
-        asset_display_mappings: None,
-        supports_preserve_mode: false,
-    },
-    RepoOption {
-        name: "BaseOS",
-        url: "pvaibhav/BaseOS",
-        info: "A minimal base OS for Anbernic RG XX devices. 3 second boot time.\nA third-party project by pvaibhav - not a spruceOS release.\nRaw disk image; erases the entire card.\n[Project page](https://github.com/pvaibhav/BaseOS)",
-        display_name: Some("BaseOS"),
-        supports_update_mode: false,  // Raw disk images always do a full burn
-        update_directories: &[],      // Not used for raw images
-        allowed_extensions: Some(&[".img.zip"]),  // Excludes .bosupd update packages
-        excluded_patterns: None,  // .bosupd already fails the extension filter
-        asset_display_mappings: Some(BASEOS_DEVICE_MAPPINGS),
+        asset_display_mappings: None,  // The manifest carries the device names
         supports_preserve_mode: false,
     },
 ];

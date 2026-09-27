@@ -21,6 +21,8 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download the beta assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,13 +44,18 @@ jobs:
 
           mkdir -p dist
           gh release download "$SOURCE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist --clobber
+          # The TF1 Image tab reads manifest.json off the latest release.
+          python3 manifest/generate.py
+          jq empty manifest/manifest.json
+          cp manifest/manifest.json dist/manifest.json
           # A release missing a platform is worse than no release at all.
           for f in spruceos-installer-windows.exe \
                    SpruceOS-Installer-macOS-Universal.zip \
                    spruceos-installer-linux-x64.tar.gz \
                    spruceos-installer-linux-arm64.tar.gz \
                    spruceos-installer-linux-armv7.tar.gz \
-                   spruceos-installer-linux-i686.tar.gz; do
+                   spruceos-installer-linux-i686.tar.gz \
+                   manifest.json; do
             [ -f "dist/$f" ] || { echo "$SOURCE_TAG has no $f"; exit 1; }
           done
           ls -la dist
@@ -101,23 +108,17 @@ jobs:
 
           ---
 
-          ## Anbernic RG XX devices
+          ## Two-card devices
 
-          These need a base OS on the first card before spruce will boot. Use the
-          **BaseOS** tab, pick your model, and write it to TF1. BaseOS is a
-          third-party project by pvaibhav, not a spruceOS release.
+          Anbernic RG XX, Powkiddy RGB30, Miniloong Pocket 1 and MagicX Zero 28 /
+          Zero 40 / XU20 need a base system on their first card before spruce
+          will boot. Use the **TF1 Image** tab, pick your device, and write it to
+          the first card. It is a raw disk image, so it erases that whole card.
+          The list of images comes from `manifest.json` on this release.
 
-          Then use the **Stable** tab to install spruceOS to TF2, exactly as you
-          would for any other device. That card stays freely swappable between
-          supported devices.
-
-          ## Powkiddy RGB30
-
-          Use the **dArkMoss** tab and write it to TF1. It is a raw disk image, so
-          it erases that whole card, and it ships as a multi-part archive - every
-          part downloads on its own, nothing to join by hand.
-
-          Then use the **Stable** tab to install spruceOS to TF2.
+          Then use the **Stable** tab to install spruceOS to the second card,
+          exactly as you would for any other device. That card stays freely
+          swappable between supported devices.
 
           ---
           Universal binary for Apple Silicon (M1/M2/M3/M4) and Intel Macs. Not code-signed.

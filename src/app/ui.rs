@@ -153,8 +153,12 @@ impl eframe::App for InstallerApp {
                         self.state = AppState::Error;
                         self.manifest_rx = None;
                     } else {
-                        // Sort assets alphabetically
-                        assets.sort_by(|a, b| a.name.cmp(&b.name));
+                        // Device first when the manifest names one, then filename.
+                        assets.sort_by(|a, b| {
+                            let ka = a.display_name.as_deref().unwrap_or(&a.name);
+                            let kb = b.display_name.as_deref().unwrap_or(&b.name);
+                            ka.cmp(kb).then_with(|| a.name.cmp(&b.name))
+                        });
 
                         // Check if we should auto-select
                         let (should_auto, auto_idx) = Self::should_auto_select(&assets);
