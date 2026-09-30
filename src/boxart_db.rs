@@ -40,6 +40,8 @@ pub fn get_boxart_db(system: &str) -> Option<&'static str> {
         "GW" => Some(include_boxart_db!("GW")),
         "INTELLIVISION" => Some(include_boxart_db!("INTELLIVISION")),
         "LYNX" => Some(include_boxart_db!("LYNX")),
+        // Same libretro "MAME" thumbnail set as ARCADE (see SYSTEM_MAPPINGS).
+        "MAME2003PLUS" => Some(include_boxart_db!("ARCADE")),
         "MD" => Some(include_boxart_db!("MD")),
         "MS" => Some(include_boxart_db!("MS")),
         "MSUMD" => Some(include_boxart_db!("MSUMD")),

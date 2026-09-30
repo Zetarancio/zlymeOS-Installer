@@ -651,6 +651,22 @@ mod tests {
     }
 
     #[test]
+    fn test_every_arcade_system_has_a_boxart_db() {
+        // Regression test for spruceOS#1322: MAME2003PLUS had no boxart_db
+        // entry, so find_image_name bailed out before matching any ROM.
+        for sys in ["ARCADE", "NEOGEO", "CPS1", "CPS2", "CPS3", "FBNEO", "MAME2003PLUS"] {
+            assert!(BoxArtScraper::is_arcade_system(sys));
+            assert!(boxart_db::get_boxart_db(sys).is_some(), "no boxart db for {sys}");
+        }
+    }
+
+    #[test]
+    fn test_mame2003plus_rom_finds_image() {
+        let mut scraper = BoxArtScraper::new();
+        assert!(scraper.find_image_name("MAME2003PLUS", "1941.zip").is_some());
+    }
+
+    #[test]
     fn test_weighted_similarity() {
         let tokens1: HashSet<String> = ["super", "mario", "bros"].iter().map(|s| s.to_string()).collect();
         let tokens2: HashSet<String> = ["super", "mario", "brothers"].iter().map(|s| s.to_string()).collect();
