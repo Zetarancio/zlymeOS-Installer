@@ -110,8 +110,8 @@ jobs:
 
           ## Two-card devices
 
-          Anbernic RG XX, Powkiddy RGB30, Miniloong Pocket 1 and MagicX Zero 28 /
-          Zero 40 / XU20 need a base system on their first card before spruce
+          Anbernic RG XX, Powkiddy RGB30 / RGB20SX, Miniloong Pocket 1 and MagicX
+          Zero 28 / Zero 40 / XU20 need a base system on their first card before spruce
           will boot. Use the **TF1 Image** tab, pick your device, and write it to
           the first card. It is a raw disk image, so it erases that whole card.
           The list of images comes from `manifest.json` on this release.
