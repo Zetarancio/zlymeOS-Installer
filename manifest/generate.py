@@ -14,6 +14,7 @@ SOURCES = [
         "os": "dArkMoss",
         "match": r"\.img\.7z\.\d{3}$",
         "devices": {"_RGB30_": "Powkiddy RGB30", "_MINILOONG_": "Miniloong Pocket 1"},
+        "aliases": {"_RGB30_": {"_RGB20SX_": "Powkiddy RGB20SX"}},
         "note": "Debian base for TF1; spruceOS goes on TF2",
     },
     {
@@ -63,13 +64,18 @@ def main():
             if device is None:
                 print(f"skipping {name}: no device mapping")
                 continue
-            assets.append({
-                "name": name,
-                "url": asset["browser_download_url"],
-                "size": asset["size"],
-                "display_name": device,
-                "devices": f"{source['os']} {tag}: {source['note']}",
-            })
+            entries = [(name, device)]
+            for key, aliases in source.get("aliases", {}).items():
+                if key in name:
+                    entries += [(name.replace(key, alias), label) for alias, label in aliases.items()]
+            for entry_name, label in entries:
+                assets.append({
+                    "name": entry_name,
+                    "url": asset["browser_download_url"],
+                    "size": asset["size"],
+                    "display_name": label,
+                    "devices": f"{source['os']} {tag}: {source['note']}",
+                })
     assets.sort(key=lambda a: (a["display_name"], a["name"]))
     manifest = {"version": "1.0", "display_name": "TF1 image", "assets": assets}
     with open("manifest/manifest.json", "w", encoding="utf-8") as f:
