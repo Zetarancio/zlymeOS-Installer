@@ -30,20 +30,16 @@ jobs:
           SOURCE_TAG: ${{ inputs.source_tag }}
         run: |
           set -e
-          # A beta tag is reused build after build, so it can still hold binaries
-          # older than the code being released. Refuse those. This fork releases
-          # from zlyme-installer, not upstream main.
-          BRANCH=zlyme-installer
-          HEAD_DATE="$(gh api "repos/$GITHUB_REPOSITORY/commits/${BRANCH}" --jq '.commit.committer.date')"
-          echo "$BRANCH committed $HEAD_DATE"
-          gh release view "$SOURCE_TAG" --repo "$GITHUB_REPOSITORY" \
-            --json assets --jq '.assets[] | "\(.updatedAt) \(.name)"' | sort > assets.txt
-          # Read from a file, not a pipe: a pipeline would put this loop in a
-          # subshell and its exit would not fail the step.
-          while read -r ts name; do
-            echo "  $ts $name"
-            [[ "$ts" > "$HEAD_DATE" ]] || { echo "$name is older than $BRANCH; build the beta first"; exit 1; }
-          done < assets.txt
+          # Promote the staging release as it stands. A later README or workflow
+          # commit must not force another binary build. Refuse a missing tag, a
+          # draft, or a tag that is not the beta prerelease.
+          if ! gh release view "$SOURCE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --json isDraft,isPrerelease > release-source.json 2>release-source.err; then
+            cat release-source.err
+            echo "Source release $SOURCE_TAG does not exist."
+            exit 1
+          fi
+          python3 -c 'import json,os,sys; s=json.load(open("release-source.json")); t=os.environ["SOURCE_TAG"]; sys.exit(t+" is a draft. Publish the beta before promoting it.") if s["isDraft"] else sys.exit(t+" is not a prerelease. Refusing to promote a production release.") if not s["isPrerelease"] else print(t+" is a prerelease and not a draft.")'
 
           mkdir -p dist
           gh release download "$SOURCE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist --clobber
