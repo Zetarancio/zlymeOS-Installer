@@ -12,17 +12,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # beta-<branch> is reused by every build of that branch, and an existing
+      # tag is not moved by the release action. Move only this mutable beta tag
+      # to the workflow commit and drop its old binaries, so every asset left on
+      # it was built from this commit. Normal release tags are never touched here.
+      - name: Point the beta tag at this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: beta-${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" \
+              -f sha="${GITHUB_SHA}" -F force=true >/dev/null
+            gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" \
+              --json assets --jq '.assets[].name' > old-assets.txt || : > old-assets.txt
+            while read -r name; do
+              gh release delete-asset "${TAG}" "${name}" --repo "${GITHUB_REPOSITORY}" --yes
+            done < old-assets.txt
+          fi
+
       - name: Create Beta Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: beta-${{ github.ref_name }}
+          target_commitish: ${{ github.sha }}
           # Branch builds must never take the Latest slot: the installer's own
           # update check reads /releases/latest, so a beta there would tell every
           # user to "update" to a branch build.
           make_latest: false
           name: Beta Build (${{ github.ref_name }})
           body: |
-            Automated beta build from the `${{ github.ref_name }}` branch.
+            Automated beta build from the `${{ github.ref_name }}` branch, commit `${{ github.sha }}`.
 
             **Warning:** This is a pre-release build and may contain bugs.
 
@@ -74,6 +95,15 @@ jobs:
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check the beta tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: beta-${{ github.ref_name }}
+        run: |
+          tag_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG}" --jq .sha)"
+          echo "${TAG} is ${tag_sha}; this workflow is ${GITHUB_SHA}"
+          [ "${tag_sha}" = "${GITHUB_SHA}" ] || { echo "beta tag is not on this commit"; exit 1; }
 
   trigger-builds:
     needs: create-release

@@ -81,6 +81,19 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}.tar.gz
 
+      # Build All moves the beta tag to its own commit before dispatching this
+      # build. If the branch moved in between, these binaries are not the commit
+      # the tag names, so refuse to upload them.
+      - name: Check the beta tag names this commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: beta-${{ github.ref_name }}
+        run: |
+          tag_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG}" --jq .sha)"
+          echo "${TAG} is ${tag_sha}; this build is ${GITHUB_SHA}"
+          [ "${tag_sha}" = "${GITHUB_SHA}" ] || { echo "beta tag and build commit differ; rerun Build All Platforms"; exit 1; }
+
       - name: Upload to Beta Release
         uses: softprops/action-gh-release@v1
         with:

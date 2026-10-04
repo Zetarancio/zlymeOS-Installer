@@ -41,6 +41,28 @@ jobs:
           fi
           python3 -c 'import json,os,sys; s=json.load(open("release-source.json")); t=os.environ["SOURCE_TAG"]; sys.exit(t+" is a draft. Publish the beta before promoting it.") if s["isDraft"] else sys.exit(t+" is not a prerelease. Refusing to promote a production release.") if not s["isPrerelease"] else print(t+" is a prerelease and not a draft.")'
 
+          # Build All moves the beta tag to the commit it built, and the platform
+          # builds refuse to upload any other commit. Release that exact commit.
+          # Later commits may touch only Markdown or this workflow; anything else
+          # could change the binaries, so the beta has to be rebuilt first.
+          BRANCH=zlyme-installer
+          SOURCE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/commits/${SOURCE_TAG}" --jq .sha)"
+          gh api "repos/$GITHUB_REPOSITORY/compare/${SOURCE_SHA}...${BRANCH}" > compare.json
+          python3 - <<'PY'
+          import json, sys
+          c = json.load(open("compare.json"))
+          if c["behind_by"] != 0:
+              sys.exit("the beta commit is not on zlyme-installer; rebuild the beta")
+          allowed = (".github/workflows/create-latest-release.yml",)
+          bad = [f["filename"] for f in c.get("files", [])
+                 if not (f["filename"].endswith(".md") or f["filename"] in allowed)]
+          if bad:
+              sys.exit("changed since the beta build: " + ", ".join(bad) + "; rebuild the beta")
+          print("beta commit %s, branch %d commits ahead in Markdown or this workflow only"
+                % (c["base_commit"]["sha"], c["ahead_by"]))
+          PY
+          echo "SOURCE_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
+
           mkdir -p dist
           gh release download "$SOURCE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist --clobber
           # A release missing a platform is worse than no release at all.
@@ -129,7 +151,7 @@ jobs:
               echo "$TAG does not exist. Creating a normal release."
               gh release create "$TAG" dist/* \
                 --repo "$GITHUB_REPOSITORY" \
-                --target zlyme-installer \
+                --target "$SOURCE_SHA" \
                 --title "zlyme Installer $TAG" \
                 --notes-file notes.md
             else
@@ -151,7 +173,7 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --draft=false \
               --prerelease=false \
-              --target zlyme-installer \
+              --target "$SOURCE_SHA" \
               --title "zlyme Installer $TAG" \
               --notes-file notes.md
           fi
@@ -159,6 +181,10 @@ jobs:
             --json tagName,isDraft,isPrerelease,assets \
             --jq '"tag=\(.tagName) draft=\(.isDraft) prerelease=\(.isPrerelease) assets=\([.assets[].name] | join(","))"' \
             | tee -a "$GITHUB_STEP_SUMMARY"
+          # The tag must name the commit the beta binaries were built from.
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/${TAG}" --jq .sha)"
+          echo "$TAG is $tag_sha"
+          [ "$tag_sha" = "$SOURCE_SHA" ] || { echo "$TAG is not on $SOURCE_SHA"; exit 1; }
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets --jq '
             if .isDraft != false or .isPrerelease != false then error("release is still a draft or prerelease") else empty end
           '
