@@ -327,8 +327,8 @@ pub const REPO_OPTIONS: &[RepoOption] = &[
         info: "Zlyme is a Linux-based OS for the Miyoo Flip, built around NextUI and made for people who like to use, tweak, and experiment with their handheld.\n\
 This installer writes the latest release to a dedicated card in the RIGHT slot, next to the power button. It erases the entire selected card, so choose the right drive.\n\
 Booting Zlyme from SD needs apommel-multiboot, or the stock preloader erased.\n\
-[Read the Zlyme README](https://github.com/Zetarancio/zlyme)\n\
-Based on the SpruceOS Installer. Huge thanks to the SpruceOS team for their support.",
+Based on the SpruceOS Installer. Huge thanks to the SpruceOS team for their support.\n\
+[Read the Zlyme README](https://github.com/Zetarancio/zlyme)",
         display_name: Some("zlyme"),
         supports_update_mode: false,  // Raw disk image, always a full burn
         update_directories: &[],      // Not used for raw images
