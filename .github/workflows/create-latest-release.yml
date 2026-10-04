@@ -1,7 +1,8 @@
 name: Create Latest Release
 
-# Drafts a versioned release from an already-built beta, for manual publishing.
-# The platform builds only ever upload to beta-<branch>, so build that first.
+# Publishes a normal release from an already-built beta. Branch builds stay
+# prereleases on beta-<branch>, so build that first. This workflow does not
+# mark the result as a draft or a prerelease, so GitHub can make it Latest.
 
 on:
   workflow_dispatch:
@@ -105,6 +106,10 @@ jobs:
 
           ---
           Universal binary for Apple Silicon (M1/M2/M3/M4) and Intel Macs. Not code-signed.
+
+          The Zlyme Installer is based on the SpruceOS Installer. Thanks to the SpruceOS team for the original work and for their support.
+
+          More about Zlyme: https://github.com/Zetarancio/zlyme
           NOTES
           # __REPO__ is the workflow repository (owner/name), not a hard-coded fork.
           sed -i "s|__TAG__|${TAG}|g; s|__REPO__|${GITHUB_REPOSITORY}|g" notes.md
@@ -116,19 +121,57 @@ jobs:
           TAG: ${{ inputs.version }}
         run: |
           set -e
-          # Draft of a normal release, not a prerelease. Edit the notes and
-          # publish by hand. Because this is not marked prerelease, publishing
-          # it can make it the Latest release. Branch betas stay prereleases.
-          gh release create "$TAG" dist/* \
-            --repo "$GITHUB_REPOSITORY" \
-            --target zlyme-installer \
-            --title "zlyme Installer $TAG" \
-            --notes-file notes.md \
-            --draft
-          # Reporting must not fail a run that already produced the draft.
-          {
-            echo "Drafted $TAG. Review the notes and publish it from the GitHub UI."
-            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,isPrerelease,assets \
-              --jq '"tag=\(.tagName) draft=\(.isDraft) prerelease=\(.isPrerelease) assets=\(.assets|length)"' \
-              || echo "(could not read the draft back; check the Releases page)"
-          } >> "$GITHUB_STEP_SUMMARY"
+          # A normal release, not a draft and not a prerelease, so it can become
+          # Latest. Branch betas stay prereleases and are not touched here.
+          # An earlier test may already have left this tag as a draft.
+          set +e
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft > release-state.json 2>release-view.err
+          view_status=$?
+          set -e
+          if [ "$view_status" -ne 0 ]; then
+            if grep -qi 'not found' release-view.err; then
+              echo "$TAG does not exist. Creating a normal release."
+              gh release create "$TAG" dist/* \
+                --repo "$GITHUB_REPOSITORY" \
+                --target zlyme-installer \
+                --title "zlyme Installer $TAG" \
+                --notes-file notes.md
+            else
+              cat release-view.err
+              echo "Could not tell whether $TAG exists. Not creating or changing a release."
+              exit 1
+            fi
+          else
+            is_draft="$(python3 -c 'import json; print("true" if json.load(open("release-state.json"))["isDraft"] else "false")')"
+            if [ "$is_draft" != "true" ]; then
+              echo "$TAG is already published. Refusing to change a public release."
+              exit 1
+            fi
+            echo "$TAG is a draft. Replacing its assets and publishing it."
+            gh release upload "$TAG" dist/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+            gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft=false \
+              --prerelease=false \
+              --target zlyme-installer \
+              --title "zlyme Installer $TAG" \
+              --notes-file notes.md
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,isDraft,isPrerelease,assets \
+            --jq '"tag=\(.tagName) draft=\(.isDraft) prerelease=\(.isPrerelease) assets=\([.assets[].name] | join(","))"' \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,isPrerelease,assets --jq '
+            if .isDraft != false or .isPrerelease != false then error("release is still a draft or prerelease") else empty end
+          '
+          for f in zlyme-installer-windows.exe \
+                   zlyme-installer-macOS-Universal.zip \
+                   zlyme-installer-linux-x64.tar.gz \
+                   zlyme-installer-linux-arm64.tar.gz \
+                   zlyme-installer-linux-armv7.tar.gz \
+                   zlyme-installer-linux-i686.tar.gz; do
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' \
+              | grep -qx "$f" || { echo "published release is missing $f"; exit 1; }
+          done
