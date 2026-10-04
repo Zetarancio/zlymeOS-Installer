@@ -1,12 +1,64 @@
-# SpruceOS Installer
+# Zlyme Installer
 
-## To-Do
+The Zlyme Installer puts [Zlyme](https://github.com/Zetarancio/zlyme) on a Miyoo Flip. It fetches the latest Zlyme release, takes its `zlyme.img`, and writes it to an SD card as a raw disk image. It runs on Windows, Linux and macOS.
+
+It's based on the [SpruceOS Installer](https://github.com/spruceUI/spruceOS-Installer). [SundownerSport](https://github.com/Sundownersport) kindly made the initial Zlyme adaptation, the single-tab build that burns the Zlyme image. The SpruceOS, NextUI and other upstream credits stay as they were.
+
+The Zlyme build lives on the `zlyme-installer` branch. The `main` branch mirrors upstream SpruceOS.
+
+## Using it
+
+1. Download the build for your computer from the [Releases page](https://github.com/Zetarancio/zlymeOS-Installer/releases):
+   - Windows: `zlyme-installer-windows.exe`
+   - Linux: `zlyme-installer-linux-x64.tar.gz`, `zlyme-installer-linux-arm64.tar.gz`, `zlyme-installer-linux-i686.tar.gz` (32-bit) or `zlyme-installer-linux-armv7.tar.gz`
+   - macOS, Apple Silicon and Intel: `zlyme-installer-macOS-Universal.zip`
+2. Start it. The apps aren't code-signed, so your OS may warn you the first time.
+   - Windows: if SmartScreen appears, click **More info**, then **Run anyway**. The installer asks for administrator rights when it needs them.
+   - Linux: extract the archive with `tar -xzf` and run the binary. It asks for privileges through `pkexec` when it needs them. See [Windows/Linux Users](#windowslinux-users).
+   - macOS: give Terminal Full Disk Access first, then open `launch-installer.command`. The steps are under [macOS Users](#macos-users).
+3. Insert the SD card, pick it in the drive list, and click **Install**.
+
+> **Warning:** installing erases the whole selected card, partition table included. Use a dedicated card for Zlyme, not one that holds your games or saves, and check the drive before you click **Install**.
+
+The Flip ignores the SD card until its preloader is changed. Do this once, before the first boot:
+
+- Install apommel-multiboot (recommended): [wiki how-to](https://github.com/Zetarancio/Miyoo-Flip-Mainline-Linux-Reverse-Engineering/blob/main/docs/boot-and-flash/sd-multiboot-apommel.md).
+- Or erase the preloader: [stock ↔ SD-boot without opening the device](https://github.com/Zetarancio/Miyoo-Flip-Mainline-Linux-Reverse-Engineering/blob/main/docs/boot-and-flash/stock-rocknix-without-disassembly.md).
+
+Put the Zlyme card in the **right** slot, next to the power button. First boot and loading games are covered in [Zlyme's install docs](https://github.com/Zetarancio/zlyme#install).
+
+## Credits and license
+
+> **Please do not remove the Spruce or NextUI teams from the authors section.**
+> Instead, add your name alongside the existing credits.
+
+### Authors
+
+- [SpruceOS Team](https://github.com/spruceUI)
+- [NextUI Team](https://github.com/LoveRetro)
+- [Tag](https://github.com/CMTag)
+- [Helaas](https://github.com/Helaas)
+- [SundownerSport](https://github.com/Sundownersport) - Zlyme adaptation
+- [Zetarancio](https://github.com/Zetarancio) - Zlyme maintainer
+
+Third-party acknowledgments, including the bundled 7-Zip binary (LGPL), are under [Acknowledgments](#acknowledgments).
+
+The installer is licensed under [CC BY-NC 4.0](LICENSE) (Creative Commons Attribution-NonCommercial 4.0 International).
+
+---
+
+## Upstream SpruceOS Installer documentation
+
+Everything below is the developer documentation inherited from the SpruceOS Installer. It describes the upstream project: multiple repository tabs, archive installs, update mode, the boxart scraper and the rebranding guide. The Zlyme build uses one tab, burns `.img` assets only, and hides the boxart scraper.
+
+### To-Do
+
 - Show error in pop-up when an install fails
 - Checkboxes for additional packages (themes, ports, games)
 
 ---
 
-# Key Features
+### Key Features
 
 **Cross-platform drive detection:**
 - Windows: `GetLogicalDrives` + `IOCTL_STORAGE_GET_DEVICE_NUMBER`
@@ -75,16 +127,7 @@
 
 GitHub Actions automatically build releases per branch. If you'd like to use this installer for your own CFW project, let us know—we can create a branch for you or add you directly to the repository.
 
-> **Please do not remove the Spruce or NextUI teams from the authors section.**
-> Instead, add your name alongside the existing credits.
-
-## Authors
-
-
-- [SpruceOS Team](https://github.com/spruceUI)
-- [NextUI Team](https://github.com/LoveRetro)
-- [Tag](https://github.com/CMTag)
-- [Helaas](https://github.com/Helaas)
+The authors list is under [Credits and license](#credits-and-license).
 
 ---
 
