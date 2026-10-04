@@ -76,12 +76,18 @@ pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// the check entirely. Forks: point this at your own repo, or set it to None.
 /// The check is silent - offline, rate limited or unreadable all mean "say
 /// nothing", because a nag the user cannot act on is worse than no nag.
-pub const UPDATE_CHECK_REPO: Option<&str> = None;
+pub const UPDATE_CHECK_REPO: Option<&str> = Some("Zetarancio/zlymeOS-Installer");
 
 /// Where the "new version" notice sends people. There is deliberately no
 /// auto-update: the binaries are not code signed, so a downloaded replacement
 /// would be blocked by Gatekeeper on macOS and SmartScreen on Windows.
-pub const UPDATE_DOWNLOAD_URL: &str = "https://github.com/spruceUI/spruceOS-Installer/releases/latest";
+pub const UPDATE_DOWNLOAD_URL: &str =
+    "https://github.com/Zetarancio/zlymeOS-Installer/releases/latest";
+
+/// Desktop Libretro boxart scraper. Zlyme already scrapes on the device, so
+/// the installer must not show this UI. The scraper code stays compiled so
+/// the fork does not have to delete the upstream subsystem.
+pub const ENABLE_BOXART_SCRAPER: bool = false;
 
 /// Prefix for temporary folders and files
 pub const TEMP_PREFIX: &str = env!("CARGO_PKG_NAME");
@@ -602,15 +608,5 @@ pub const SCRAPER_CONFIG: ScraperConfig = ScraperConfig {
 // ============================================================================
 
 pub fn setup_theme(ctx: &egui::Context) {
-    use egui_thematic::ThemeConfig;
-
-    let is_dark = ctx.style().visuals.dark_mode;
-    let theme = if is_dark {
-        ThemeConfig::gruvbox_dark_preset()
-    } else {
-        // TODO: not sure what light preset would fit spruceos branding,
-        // pick one from theme editor
-        ThemeConfig::gruvbox_dark_preset()
-    };
-    ctx.set_visuals(theme.to_visuals());
+    ctx.set_visuals(crate::app::zlyme_theme().to_visuals());
 }

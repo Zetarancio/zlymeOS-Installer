@@ -15,4 +15,5 @@ mod logic;
 mod ui;
 
 // Re-export public types so they can be used by other modules via super::
-pub use state::{InstallerApp, AppState, get_available_disk_space};
+pub use state::{get_available_disk_space, AppState, InstallerApp};
+pub(crate) use theme::zlyme_theme;

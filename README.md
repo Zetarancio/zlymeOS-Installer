@@ -306,7 +306,7 @@ https://ordonez.tv/2024/11/04/how-to-run-unsigned-apps-in-macos-15-1/
 2. **Download and Run the Installer:**
    - Download and extract the ZIP file
    - **Easy method:** Double-click `launch-installer.command` to automatically remove quarantine and launch
-   - **Alternative:** Right-click "SpruceOSInstaller.app" and select "Open", then click "Open" in the dialog
+   - **Alternative:** Right-click "ZlymeInstaller.app" and select "Open", then click "Open" in the dialog
 
 3. **Authorization During Install:**
    - When writing to SD cards, you'll see a native macOS authorization dialog requesting your admin password (via `authopen`)
@@ -319,8 +319,8 @@ https://ordonez.tv/2024/11/04/how-to-run-unsigned-apps-in-macos-15-1/
 - **Quit Terminal completely** and reopen it (changes don't apply to running Terminal sessions)
 - Try running from Terminal manually:
   ```bash
-  cd ~/Downloads/SpruceOSInstaller.app/Contents/MacOS
-  ./spruceos-installer
+  cd ~/Downloads/ZlymeInstaller.app/Contents/MacOS
+  ./zlyme-installer
   ```
 
 **Note:** This app is not code-signed.

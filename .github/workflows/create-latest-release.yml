@@ -12,7 +12,7 @@ on:
       source_tag:
         description: 'Beta release to promote'
         required: true
-        default: 'beta-main'
+        default: 'beta-zlyme-installer'
 
 jobs:
   create-latest-release:
@@ -30,16 +30,18 @@ jobs:
         run: |
           set -e
           # A beta tag is reused build after build, so it can still hold binaries
-          # older than the code being released. Refuse those.
-          HEAD_DATE="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq '.commit.committer.date')"
-          echo "main committed $HEAD_DATE"
+          # older than the code being released. Refuse those. This fork releases
+          # from zlyme-installer, not upstream main.
+          BRANCH=zlyme-installer
+          HEAD_DATE="$(gh api "repos/$GITHUB_REPOSITORY/commits/${BRANCH}" --jq '.commit.committer.date')"
+          echo "$BRANCH committed $HEAD_DATE"
           gh release view "$SOURCE_TAG" --repo "$GITHUB_REPOSITORY" \
             --json assets --jq '.assets[] | "\(.updatedAt) \(.name)"' | sort > assets.txt
           # Read from a file, not a pipe: a pipeline would put this loop in a
           # subshell and its exit would not fail the step.
           while read -r ts name; do
             echo "  $ts $name"
-            [[ "$ts" > "$HEAD_DATE" ]] || { echo "$name is older than main; build the beta first"; exit 1; }
+            [[ "$ts" > "$HEAD_DATE" ]] || { echo "$name is older than $BRANCH; build the beta first"; exit 1; }
           done < assets.txt
 
           mkdir -p dist
@@ -65,12 +67,12 @@ jobs:
 
           | Platform | Download |
           |----------|----------|
-          | Windows (x64) | [zlyme-installer-windows.exe](https://github.com/spruceUI/spruceOS-Installer/releases/download/__TAG__/zlyme-installer-windows.exe) |
-          | macOS (Apple Silicon + Intel) | [zlyme-installer-macOS-Universal.zip](https://github.com/spruceUI/spruceOS-Installer/releases/download/__TAG__/zlyme-installer-macOS-Universal.zip) |
-          | Linux x64 | [zlyme-installer-linux-x64.tar.gz](https://github.com/spruceUI/spruceOS-Installer/releases/download/__TAG__/zlyme-installer-linux-x64.tar.gz) |
-          | Linux ARM64 | [zlyme-installer-linux-arm64.tar.gz](https://github.com/spruceUI/spruceOS-Installer/releases/download/__TAG__/zlyme-installer-linux-arm64.tar.gz) |
-          | Linux ARMv7 | [zlyme-installer-linux-armv7.tar.gz](https://github.com/spruceUI/spruceOS-Installer/releases/download/__TAG__/zlyme-installer-linux-armv7.tar.gz) |
-          | Linux i686 (32-bit) | [zlyme-installer-linux-i686.tar.gz](https://github.com/spruceUI/spruceOS-Installer/releases/download/__TAG__/zlyme-installer-linux-i686.tar.gz) |
+          | Windows (x64) | [zlyme-installer-windows.exe](https://github.com/__REPO__/releases/download/__TAG__/zlyme-installer-windows.exe) |
+          | macOS (Apple Silicon + Intel) | [zlyme-installer-macOS-Universal.zip](https://github.com/__REPO__/releases/download/__TAG__/zlyme-installer-macOS-Universal.zip) |
+          | Linux x64 | [zlyme-installer-linux-x64.tar.gz](https://github.com/__REPO__/releases/download/__TAG__/zlyme-installer-linux-x64.tar.gz) |
+          | Linux ARM64 | [zlyme-installer-linux-arm64.tar.gz](https://github.com/__REPO__/releases/download/__TAG__/zlyme-installer-linux-arm64.tar.gz) |
+          | Linux ARMv7 | [zlyme-installer-linux-armv7.tar.gz](https://github.com/__REPO__/releases/download/__TAG__/zlyme-installer-linux-armv7.tar.gz) |
+          | Linux i686 (32-bit) | [zlyme-installer-linux-i686.tar.gz](https://github.com/__REPO__/releases/download/__TAG__/zlyme-installer-linux-i686.tar.gz) |
 
           ---
 
@@ -104,7 +106,8 @@ jobs:
           ---
           Universal binary for Apple Silicon (M1/M2/M3/M4) and Intel Macs. Not code-signed.
           NOTES
-          sed -i "s|__TAG__|${TAG}|g" notes.md
+          # __REPO__ is the workflow repository (owner/name), not a hard-coded fork.
+          sed -i "s|__TAG__|${TAG}|g; s|__REPO__|${GITHUB_REPOSITORY}|g" notes.md
           cat notes.md
 
       - name: Create the release
@@ -113,11 +116,12 @@ jobs:
           TAG: ${{ inputs.version }}
         run: |
           set -e
-          # Draft, like the spruceOS release workflow: edit the notes and publish
-          # by hand. GitHub's publish dialog marks it latest.
+          # Draft of a normal release, not a prerelease. Edit the notes and
+          # publish by hand. Because this is not marked prerelease, publishing
+          # it can make it the Latest release. Branch betas stay prereleases.
           gh release create "$TAG" dist/* \
             --repo "$GITHUB_REPOSITORY" \
-            --target main \
+            --target zlyme-installer \
             --title "zlyme Installer $TAG" \
             --notes-file notes.md \
             --draft
